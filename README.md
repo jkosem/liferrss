@@ -1,4 +1,4 @@
-# LifeRSS
+# LiferSS
 
 A small, keyboard-first Firefox RSS/Atom reader. **v0.1 is a development preview.**
 
@@ -7,7 +7,7 @@ A small, keyboard-first Firefox RSS/Atom reader. **v0.1 is a development preview
 1. Download or clone the `v0.1-core-reader` branch.
 2. Open Firefox at `about:debugging#/runtime/this-firefox`.
 3. Click **Load Temporary Add-on** and select `manifest.json`.
-4. Open the sidebar using Firefox's sidebar selector and choose LifeRSS.
+4. Open the sidebar using Firefox's sidebar selector and choose LiferSS.
 5. Click **+** and paste a direct RSS or Atom feed URL.
 
 Temporary add-ons are removed when Firefox restarts. We can package and sign the extension later.
