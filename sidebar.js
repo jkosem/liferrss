@@ -1,4 +1,4 @@
-/* LifeRSS M1 sidebar. Native DOM, no build step. */
+/* LifeRSS v0.1 sidebar. Native DOM, no build step. */
 const $ = id => document.getElementById(id);
 const defaults = {feeds:[],articles:[],states:{}};
 let data = structuredClone(defaults);
@@ -27,7 +27,7 @@ function render(){
     $("feeds").append(b);
   }
   const rows=filtered();
-  if(!rows.some(a=>a.id===selected)) selected=rows[0]?.id||null;
+  if(!rows.some(a=>a.id===selected) && !reading) selected=rows[0]?.id||null;
   $("articles").replaceChildren();
   if(!rows.length){const p=document.createElement("p");p.className="empty";p.textContent=data.feeds.length?"No articles in this view.":"No subscriptions yet. Click + to add your first RSS feed."; $("articles").append(p);}
   for(const a of rows){
@@ -51,7 +51,19 @@ function showReader(){
   $("readerSummary").textContent=a.summary || "No summary supplied by the feed. Open the original article to read it.";
   $("toggleRead").textContent=unread(a)?"Mark read":"Mark unread";
 }
-function openReader(){reading=true;render();}
+async function openReader(){
+  if(!selected)return;
+  // Reading an article counts as read. Preserve its reader view even if it
+  // disappears from the Unread list after the state update.
+  reading=true;
+  if(!data.states[selected]){
+    data.states={...data.states,[selected]:true};
+    render();
+    await browser.storage.local.set({states:data.states});
+  }else{
+    render();
+  }
+}
 function back(){reading=false;render();$("articles").focus();}
 async function toggleRead(){
   if(!selected)return;
@@ -59,12 +71,12 @@ async function toggleRead(){
   await browser.storage.local.set({states});
   await reload();
 }
-function move(step,open){
+async function move(step,open){
   const rows=filtered();if(!rows.length)return;
   const index=rows.findIndex(a=>a.id===selected);
   selected=rows[(index+step+rows.length)%rows.length].id;
-  if(open)reading=true;
-  render();
+  if(open)await openReader();
+  else {reading=false;render();}
   document.querySelector(".article.selected")?.scrollIntoView({block:"nearest"});
 }
 function openOriginal(){
