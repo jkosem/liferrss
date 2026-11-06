@@ -4,7 +4,7 @@ A small, keyboard-first Firefox RSS/Atom reader. **v0.1 is a development preview
 
 ## Try v0.1 in Firefox
 
-1. Download or clone the `feature/m1-reader` branch (the branch name is retained to keep the existing pull request intact).
+1. Download or clone the `v0.1-core-reader` branch.
 2. Open Firefox at `about:debugging#/runtime/this-firefox`.
 3. Click **Load Temporary Add-on** and select `manifest.json`.
 4. Open the sidebar using Firefox's sidebar selector and choose LifeRSS.
