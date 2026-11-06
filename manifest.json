@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "LifeRSS",
+  "name": "LiferSS",
   "version": "0.1.0",
   "description": "Keyboard-first local RSS reader for Firefox.",
   "permissions": [
@@ -16,7 +16,7 @@
     ]
   },
   "sidebar_action": {
-    "default_title": "LifeRSS",
+    "default_title": "LiferSS",
     "default_panel": "sidebar.html"
   },
   "browser_specific_settings": {
