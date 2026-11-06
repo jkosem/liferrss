@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>LifeRSS</title><link rel="stylesheet" href="sidebar.css"></head>
+<body>
+<header><div class="brand"><span class="logo">◉</span><strong>LifeRSS</strong></div><button id="refresh" title="Refresh (r)">↻</button></header>
+<nav><button class="active" data-view="unread">Unread</button><button data-view="all">All</button><button id="add" title="Add feed (a)">＋</button></nav>
+<div id="feedBar"><button id="allFeeds" class="selected">All feeds</button><div id="feeds"></div></div>
+<div class="search"><input id="search" type="search" placeholder="Filter articles (/)"></div>
+<div id="status" role="status"></div>
+<div id="articles" aria-label="Articles" tabindex="0"></div>
+<section id="reader" hidden><button id="back">← Articles</button><h1 id="readerTitle"></h1><div id="readerFeed"></div><p id="readerSummary"></p><div class="readerActions"><button id="toggleRead">Mark read</button><button id="openOriginal">Open original ↗</button></div></section>
+<footer><span>j/k navigate · m read · v open</span><button id="help" title="Keyboard shortcuts (?)">?</button></footer>
+<dialog id="addDialog"><form method="dialog" id="addForm"><h2>Add RSS/Atom feed</h2><label for="feedUrl">Feed URL</label><input id="feedUrl" type="url" required placeholder="https://example.com/feed.xml"><div class="dialogActions"><button value="cancel" type="button" id="cancelAdd">Cancel</button><button id="confirmAdd" type="submit">Subscribe</button></div></form></dialog>
+<dialog id="helpDialog"><h2>Keyboard shortcuts</h2><p><kbd>j</kbd>/<kbd>k</kbd> Next/previous and open</p><p><kbd>n</kbd>/<kbd>p</kbd> Next/previous selection</p><p><kbd>m</kbd> Toggle read state</p><p><kbd>v</kbd> Open original in tab</p><p><kbd>a</kbd> Add a feed</p><p><kbd>r</kbd> Refresh all</p><p><kbd>/</kbd> Filter articles</p><p><kbd>?</kbd> Help</p><p><kbd>Esc</kbd> Return to list</p><button id="closeHelp">Close</button></dialog>
+<script src="sidebar.js"></script></body></html>
