@@ -1,4 +1,4 @@
-/* LifeRSS M1: background RSS/Atom fetcher. No remote backend. */
+/* LiferRSS M1: background RSS/Atom fetcher. No remote backend. */
 const DEFAULTS = { feeds: [], articles: [], states: {} };
 const POLL_MINUTES = 30;
 const MAX_PER_FEED = 200;
@@ -68,7 +68,7 @@ async function refreshFeed(url) {
 async function refreshAll() {
   const {feeds} = await load();
   for (const feed of feeds) {
-    try { await refreshFeed(feed.url); } catch (error) { console.warn("LifeRSS feed error", feed.url, error); }
+    try { await refreshFeed(feed.url); } catch (error) { console.warn("LiferRSS feed error", feed.url, error); }
   }
 }
 browser.runtime.onMessage.addListener(async message => {
