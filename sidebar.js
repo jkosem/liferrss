@@ -1,4 +1,4 @@
-/* LifeRSS v0.1 sidebar. Native DOM, no build step. */
+/* LiferRSS v0.1 sidebar. Native DOM, no build step. */
 const $ = id => document.getElementById(id);
 const defaults = {feeds:[],articles:[],states:{}};
 let data = structuredClone(defaults);
