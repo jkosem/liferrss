@@ -101,6 +101,8 @@ async function addFeed(value) {
   return {ok:true, added:true};
 }
 async function handleMessage(message) {
+  if (message?.type === "getReadLater") return {saved:await ReadLater.has(message.url)};
+  if (message?.type === "setReadLater") return ReadLater.set(message.url, message.title, message.saved === true);
   if (message?.type === "addFeed") return addFeed(message.url);
   if (message?.type === "exportOpml") return {xml:Opml.export((await load()).feeds)};
   if (message?.type === "importOpml") {
