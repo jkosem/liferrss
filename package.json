@@ -1,0 +1,14 @@
+{
+  "name": "liferrss",
+  "private": true,
+  "description": "Development checks only; extension runtime needs no build or packages.",
+  "scripts": {
+    "test": "node tests/run.cjs && node tests/sidebar.cjs && node tests/validate.cjs",
+    "test:adapter": "TEST_DOM=adapter node tests/run.cjs && node tests/sidebar.cjs && node tests/validate.cjs"
+  },
+  "devDependencies": {
+    "playwright": "1.62.1",
+    "sax": "1.6.1",
+    "xml-js": "1.6.11"
+  }
+}

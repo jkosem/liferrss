@@ -50,6 +50,7 @@ function showReader(){
   $("readerFeed").textContent=feedTitle(a.feedUrl)+" · "+new Date(a.published).toLocaleString();
   $("readerSummary").textContent=a.summary || "No summary supplied by the feed. Open the original article to read it.";
   $("toggleRead").textContent=unread(a)?"Mark read":"Mark unread";
+  updateReadLater();
 }
 async function openReader(){
   if(!selected)return;
@@ -104,6 +105,7 @@ document.addEventListener("keydown",e=>{
   if(e.key==="j"||e.key==="k"){move(e.key==="j"?1:-1,true);e.preventDefault();}
   else if(e.key==="n"||e.key==="p"){move(e.key==="n"?1:-1,false);e.preventDefault();}
   else if(e.key==="m"){toggleRead();e.preventDefault();}
+  else if(e.key==="s"&&reading){$("readLater").click();e.preventDefault();}
   else if(e.key==="v"){openOriginal();e.preventDefault();}
   else if(e.key==="a"){$("addDialog").showModal();e.preventDefault();}
   else if(e.key==="r"){$("refresh").click();e.preventDefault();}
@@ -137,3 +139,38 @@ $("opmlFile").onchange=async()=>{
   } catch(e){$("status").textContent="Import failed: "+e.message;}
   finally{$("importOpml").disabled=false;$("opmlFile").value="";}
 };
+
+let bookmarkRequest=0;
+async function updateReadLater(){
+  const token=++bookmarkRequest, article=data.articles.find(a=>a.id===selected);
+  const button=$("readLater");
+  button.disabled=true;button.setAttribute("aria-pressed","false");
+  if(!reading||!article||!/^https?:\/\//i.test(article.link||"")){
+    button.textContent="No article URL";return;
+  }
+  button.textContent="Checking Read Later…";
+  try{
+    const result=await browser.runtime.sendMessage({type:"getReadLater",url:article.link});
+    if(token!==bookmarkRequest||selected!==article.id||!reading)return;
+    button.textContent=result.saved?"Remove from Read Later":"Save for later";
+    button.setAttribute("aria-pressed",String(result.saved));button.disabled=false;
+  }catch(e){
+    if(token!==bookmarkRequest)return;
+    button.textContent="Read Later unavailable";
+    $("status").textContent="Read Later: "+e.message;
+  }
+}
+$("readLater").onclick=async()=>{
+  const article=data.articles.find(a=>a.id===selected);
+  if(!reading||!article)return;
+  const button=$("readLater"),saved=button.getAttribute("aria-pressed")!=="true";
+  button.disabled=true;
+  try{
+    await browser.runtime.sendMessage({type:"setReadLater",url:article.link,title:article.title,saved});
+    $("status").textContent=saved?"Saved to Firefox Read Later bookmarks.":"Removed from Read Later.";
+  }catch(e){$("status").textContent="Read Later: "+e.message;}
+  await updateReadLater();
+};
+for(const event of ["onCreated","onRemoved","onChanged","onMoved"]){
+  browser.bookmarks[event].addListener(()=>{if(reading)updateReadLater();});
+}

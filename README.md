@@ -73,3 +73,26 @@ New permissions: `activeTab` grants access on invocation; `scripting` reads
 declared alternate links in the active page. There are no persistent content
 scripts, tab-change listeners or automatic page scans. Existing feed host access
 is unchanged pending the integration permissions review.
+
+## v0.2 feature: Firefox bookmarks as Read Later
+
+In the article reader, press **s** or use **Save for later**. The first save
+creates **LiferRSS Read Later** under Firefox's Other Bookmarks. The button
+changes to **Remove from Read Later** when saved. Normal Tab/Enter also works.
+Only HTTP(S) articles can be saved. The extension never copies bookmark records
+to extension storage; Firefox bookmarks (and any Firefox bookmark sync you use)
+are the source of truth.
+
+New permission: `bookmarks` allows the extension to find/create its folder,
+save/remove article URLs and reflect external bookmark edits, moves and deletions.
+Moving the folder keeps it usable; renaming it stops it being recognized.
+Deleting the folder does not recreate it until the next explicit save.
+Matching named folders are checked together; unrelated bookmarks are untouched.
+No subscriptions, article IDs, cached summaries or read states are migrated.
+
+For the combined feature branch, install development dependencies with `npm install`
+and run `npm test` (native Chromium XML plus controller/manifest checks).
+`npm run test:adapter` runs data/controller/manifest checks in a restricted
+environment. The adapter suite has passed; actual Firefox toolbar, bookmarks,
+keyboard focus, upgrade and extension linting checks are still pending.
+The manifest remains at 0.1.1 until the integration/release pass after feature PRs merge.

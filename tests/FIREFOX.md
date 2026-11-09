@@ -34,3 +34,19 @@ environment. Record Firefox results before merging the feature PR.
 - Tab through multiple feeds and subscribe with Enter. Test a failed feed and retry.
 - Confirm permissions prompt, unchanged legacy subscriptions/cache/read states,
   and no page inspection until the toolbar is invoked.
+
+## Read Later
+
+- Open an article, press s: exactly one bookmark appears in Other Bookmarks →
+  LiferRSS Read Later. Press s again: it is removed. Repeat with the button
+  and with Tab/Enter; aria-pressed and button text reflect the saved state.
+- Save the same URL from two reader windows: only one bookmark is created.
+- Delete/edit/move a saved bookmark in Firefox: the visible reader updates.
+  Bookmarks outside the dedicated folder do not count as Read Later.
+- Move the folder: existing saves are recognized. Delete it: reader updates
+  without recreating it. Save again: one folder/bookmark is recreated.
+- Articles without an HTTP(S) link have a disabled save button.
+- Switch articles rapidly while bookmark lookups are pending: the save button
+  belongs to the current article. Check a rejected API call reports an error.
+- Verify existing subscriptions/cache/read state and Gecko ID survive reload;
+  extension storage contains no copied bookmark records.

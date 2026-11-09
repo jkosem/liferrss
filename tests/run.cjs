@@ -46,6 +46,12 @@ const root = path.resolve(__dirname, "..");
       };
     });
     for(const file of ["feed-utils.js","opml.js","background.js"]) await page.addScriptTag({content:await fs.readFile(path.join(root,file),"utf8")});
+    const rejected=await page.evaluate(()=>{
+      return ["<rss><channel>", "<html><body/></html>", "<rss/>"].map(xml=>{
+        try{parseFeed(xml,"https://invalid.test/feed");return false;}catch{return true;}
+      });
+    });
+    assert.deepEqual(rejected,[true,true,true]);
     const result = await page.evaluate(async () => {
       const before=structuredClone(saved);
       const xml='<opml version="2.0"><body><outline text="Folder">'+
@@ -95,6 +101,58 @@ const root = path.resolve(__dirname, "..");
     ]));
     assert.deepEqual(discovered,[{url:"https://example.test/rss",title:"RSS"},{url:"https://example.test/base/atom",title:"Atom"}]);
     assert.deepEqual(await page.evaluate(()=>Discovery.collect([])),[]);
+    await page.addScriptTag({content:await fs.readFile(path.join(root,"read-later.js"),"utf8")});
+    const bookmarks=await page.evaluate(async()=>{
+      let next=0;
+      const nodes=new Map();
+      browser.bookmarks={
+        search:async({title})=>[...nodes.values()].filter(n=>n.title===title).map(n=>({...n})),
+        getChildren:async id=>{
+          if(!nodes.has(id))throw new Error("Missing folder");
+          return [...nodes.values()].filter(n=>n.parentId===id).map(n=>({...n}));
+        },
+        create:async node=>{const result={...node,id:String(++next)};nodes.set(result.id,result);return {...result};},
+        remove:async id=>{if(!nodes.delete(id))throw new Error("Missing bookmark");}
+      };
+      const before=JSON.stringify(saved),url="https://article.test/read#section";
+      const noFolder=await message({type:"getReadLater",url});
+      const noFolderCreated=nodes.size===0;
+      await Promise.all([1,2,3].map(()=>message({type:"setReadLater",url,title:"Read & <later>",saved:true})));
+      const oneBookmark=[...nodes.values()].filter(n=>n.url===url).length;
+      let folder=[...nodes.values()].find(n=>!n.url),bookmark=[...nodes.values()].find(n=>n.url);
+      // External URL edit and move are immediately reflected on the next read.
+      bookmark.url="https://article.test/edited";
+      const externalEdit=await message({type:"getReadLater",url});
+      bookmark.url=url;bookmark.parentId="elsewhere";
+      const externalMove=await message({type:"getReadLater",url});
+      bookmark.parentId=folder.id;
+      await message({type:"setReadLater",url,saved:false});
+      const removed=await message({type:"getReadLater",url});
+      await message({type:"setReadLater",url,saved:true});
+      folder=[...nodes.values()].find(n=>!n.url);
+      for(const [id,n] of nodes)if(id===folder.id||n.parentId===folder.id)nodes.delete(id);
+      const deleted=await message({type:"getReadLater",url});
+      const notRecreated=![...nodes.values()].some(n=>!n.url);
+      await message({type:"setReadLater",url,saved:true});
+      const recreated=[...nodes.values()].filter(n=>!n.url).length===1 &&
+        [...nodes.values()].filter(n=>n.url===url).length===1;
+      // Remove externally-created duplicates only inside the dedicated folder.
+      folder=[...nodes.values()].find(n=>!n.url);
+      await browser.bookmarks.create({parentId:folder.id,url,title:"Duplicate"});
+      const unrelated=await browser.bookmarks.create({parentId:"elsewhere",url,title:"Unrelated"});
+      await message({type:"setReadLater",url,saved:false});
+      const duplicatesRemoved=!(await message({type:"getReadLater",url})).saved;
+      const unrelatedKept=nodes.has(unrelated.id);
+      let invalid=false;
+      try{await message({type:"setReadLater",url:"javascript:alert(1)",saved:true});}catch{invalid=true;}
+      return {noFolder,noFolderCreated,oneBookmark,externalEdit,externalMove,removed,deleted,notRecreated,recreated,duplicatesRemoved,unrelatedKept,invalid,storageUnchanged:before===JSON.stringify(saved)};
+    });
+    assert.deepEqual(bookmarks,{
+      noFolder:{saved:false},noFolderCreated:true,oneBookmark:1,externalEdit:{saved:false},
+      externalMove:{saved:false},removed:{saved:false},deleted:{saved:false},notRecreated:true,
+      recreated:true,duplicatesRemoved:true,unrelatedKept:true,invalid:true,storageUnchanged:true
+    });
+    console.log("PASS Read Later: concurrent duplicate saves, external edits/moves/deletion, explicit-only folder recreation, duplicate removal, unrelated bookmarks, unsafe URLs, unchanged extension storage");
     console.log("PASS discovery: distinct RSS/Atom alternates, relative/base URLs, MIME/rel normalization, unsafe URLs, no feeds");
     console.log("PASS OPML: nested import, RSS/Atom, URL normalization, mixed failures, escaping, re-import, fresh-profile round trip, concurrent subscriptions, legacy cache/read states");
   } finally {await browser.close();}
