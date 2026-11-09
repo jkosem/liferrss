@@ -21,3 +21,16 @@ replace the following checks in Firefox 115 or newer.
 
 Manual status: pending; no Firefox binary is installed in the implementation
 environment. Record Firefox results before merging the feature PR.
+
+## Toolbar discovery
+
+- Invoke the toolbar on a page declaring one RSS link: confirm before subscribing.
+- Test multiple RSS/Atom alternates, repeated relative/absolute URLs, fragments,
+  mixed-case MIME/rel values, and a base URL; each distinct HTTP(S) feed appears once.
+- Confirm an existing subscription (including an old URL with a fragment) is
+  labelled Already subscribed. Confirm subscribing uses the sidebar feed store.
+- A page with no alternates shows a quiet popup message. Internal Firefox pages
+  show an unavailable message. Page contents remain unchanged.
+- Tab through multiple feeds and subscribe with Enter. Test a failed feed and retry.
+- Confirm permissions prompt, unchanged legacy subscriptions/cache/read states,
+  and no page inspection until the toolbar is invoked.
