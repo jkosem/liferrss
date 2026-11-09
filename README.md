@@ -60,3 +60,16 @@ See [tests/FIREFOX.md](tests/FIREFOX.md) for manual Firefox checks.
 If browser launch is restricted, `TEST_DOM=adapter node tests/run.cjs` runs the
 same data tests using the development-only `xml-js` SAX parser and a minimal
 DOM adapter. It does not verify native browser XML or extension integration.
+
+## v0.2 feature: quiet feed discovery
+
+Invoke the **Find feeds with LiferRSS** toolbar button on a web page. Confirm
+the single feed or choose a Subscribe button in the list. Existing subscriptions
+are labelled and disabled. Pages without declared RSS/Atom alternates show a
+quiet message in the popup. Firefox internal/protected pages cannot be inspected.
+Discovery reads the active page only on invocation and never adds page controls.
+
+New permissions: `activeTab` grants access on invocation; `scripting` reads
+declared alternate links in the active page. There are no persistent content
+scripts, tab-change listeners or automatic page scans. Existing feed host access
+is unchanged pending the integration permissions review.

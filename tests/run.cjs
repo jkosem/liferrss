@@ -84,6 +84,18 @@ const root = path.resolve(__dirname, "..");
     });
     assert.equal(fresh.added,5);
     assert.equal(fresh.failed,0);
+    await page.addScriptTag({content:await fs.readFile(path.join(root,"discovery.js"),"utf8")});
+    const discovered=await page.evaluate(()=>Discovery.collect([
+      {rel:"alternate",type:"application/rss+xml",href:"/rss#one",base:"https://EXAMPLE.test:443/page",title:"RSS"},
+      {rel:"stylesheet ALTERNATE",type:"APPLICATION/RSS+XML; charset=utf-8",href:"https://example.test/rss",title:"Same"},
+      {rel:"alternate",type:"application/atom+xml",href:"atom",base:"https://example.test/base/",title:"Atom"},
+      {rel:"alternate",type:"text/html",href:"https://example.test/html"},
+      {rel:"alternate",type:"application/rss+xml",href:"javascript:alert(1)"},
+      {rel:"stylesheet",type:"application/rss+xml",href:"https://example.test/no"}
+    ]));
+    assert.deepEqual(discovered,[{url:"https://example.test/rss",title:"RSS"},{url:"https://example.test/base/atom",title:"Atom"}]);
+    assert.deepEqual(await page.evaluate(()=>Discovery.collect([])),[]);
+    console.log("PASS discovery: distinct RSS/Atom alternates, relative/base URLs, MIME/rel normalization, unsafe URLs, no feeds");
     console.log("PASS OPML: nested import, RSS/Atom, URL normalization, mixed failures, escaping, re-import, fresh-profile round trip, concurrent subscriptions, legacy cache/read states");
   } finally {await browser.close();}
 })().catch(error=>{console.error(error);process.exitCode=1;});
