@@ -113,3 +113,27 @@ document.addEventListener("keydown",e=>{
 });
 browser.storage.onChanged.addListener((changes,area)=>{if(area==="local"&&["feeds","articles","states"].some(k=>k in changes))reload();});
 reload();
+
+$("exportOpml").onclick=async()=>{
+  try {
+    const {xml}=await browser.runtime.sendMessage({type:"exportOpml"});
+    const url=URL.createObjectURL(new Blob([xml],{type:"application/xml"}));
+    const link=document.createElement("a");
+    link.href=url;link.download="liferrss-subscriptions.opml";link.click();
+    setTimeout(()=>URL.revokeObjectURL(url),60000);
+    $("status").textContent="Subscriptions exported.";
+  } catch(e){$("status").textContent="Export failed: "+e.message;}
+};
+$("importOpml").onclick=()=>$("opmlFile").click();
+$("opmlFile").onchange=async()=>{
+  const file=$("opmlFile").files[0];if(!file)return;
+  $("importOpml").disabled=true;
+  $("status").textContent="Importing subscriptions…";
+  try {
+    if(file.size>5_000_000)throw new Error("Choose a file smaller than 5 MB");
+    const result=await browser.runtime.sendMessage({type:"importOpml",xml:await file.text()});
+    await reload();
+    $("status").textContent=`Import: ${result.added} added, ${result.skipped} skipped, ${result.failed} failed.`;
+  } catch(e){$("status").textContent="Import failed: "+e.message;}
+  finally{$("importOpml").disabled=false;$("opmlFile").value="";}
+};
