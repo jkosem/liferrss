@@ -40,3 +40,23 @@ No recommendations, sharing, tags, offline article downloads, or separate bookma
 The extension uses plain JavaScript and browser extension APIs with no runtime build step. RSS article summaries are displayed as plain text instead of injecting feed HTML. The manifest requests `<all_urls>` for arbitrary user-supplied feed URLs; narrower optional host permissions should be considered before a stable release.
 
 v0.1 was manually tested in a running Firefox instance before being marked complete. Future feature PRs should include their own manual Firefox test checklist.
+
+## v0.2 feature: OPML
+
+Use **Import OPML** or **Export OPML** in the sidebar (Tab to either button,
+then Enter). Export saves all subscriptions, including titles, as an OPML file.
+Import accepts nested RSS/Atom outlines, skips normalized duplicate HTTP(S)
+URLs, continues after individual failures and reports added/skipped/failed.
+Files are limited to 5 MB; individual feed requests time out after 30 seconds.
+Invalid XML rejects the file without modifying subscriptions. Failed new feeds
+are not retained. URL fragments are ignored for duplicate matching; existing
+stored URLs and article IDs are preserved. No new permissions are required.
+
+Development verification: run `node tests/run.cjs` with Playwright available
+and Chromium at `/usr/bin/chromium` (or set `CHROMIUM_PATH`). These are
+development-only dependencies; the extension remains build-free.
+See [tests/FIREFOX.md](tests/FIREFOX.md) for manual Firefox checks.
+
+If browser launch is restricted, `TEST_DOM=adapter node tests/run.cjs` runs the
+same data tests using the development-only `xml-js` SAX parser and a minimal
+DOM adapter. It does not verify native browser XML or extension integration.

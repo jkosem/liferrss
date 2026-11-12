@@ -12,6 +12,8 @@
   ],
   "background": {
     "scripts": [
+      "feed-utils.js",
+      "opml.js",
       "background.js"
     ]
   },

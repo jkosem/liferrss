@@ -1,4 +1,4 @@
-/* LiferRSS M1: background RSS/Atom fetcher. No remote backend. */
+/* LiferRSS: background RSS/Atom fetcher. No remote backend. */
 const DEFAULTS = { feeds: [], articles: [], states: {} };
 const POLL_MINUTES = 30;
 const MAX_PER_FEED = 200;
@@ -46,7 +46,7 @@ async function refreshFeed(url) {
   const existing = store.feeds.find(f => f.url === url);
   if (!existing) return;
   try {
-    const response = await fetch(url, { cache: "no-cache", credentials: "omit", redirect: "follow" });
+    const response = await fetch(url, { cache: "no-cache", credentials: "omit", redirect: "follow", signal: AbortSignal.timeout(30000) });
     if (!response.ok) throw new Error("HTTP " + response.status);
     const raw = await response.text();
     if (raw.length > 5_000_000) throw new Error("Feed response too large");
@@ -71,16 +71,51 @@ async function refreshAll() {
     try { await refreshFeed(feed.url); } catch (error) { console.warn("LiferRSS feed error", feed.url, error); }
   }
 }
-browser.runtime.onMessage.addListener(async message => {
-  if (message?.type === "addFeed") {
-    const url = new URL(message.url).href;
-    if (!/^https?:$/.test(new URL(url).protocol)) throw new Error("Use an HTTP(S) feed URL");
-    const store = await load();
-    if (!store.feeds.some(f => f.url === url)) {
-      await browser.storage.local.set({feeds:[...store.feeds,{url,title:new URL(url).hostname,error:"",refreshedAt:0}]});
+// Serialize subscription/cache writes, including alarm refreshes, so imports and
+// toolbar subscriptions cannot overwrite each other. Read states stay separate.
+let pending = Promise.resolve();
+function enqueue(task) {
+  const result = pending.then(task);
+  pending = result.catch(() => {});
+  return result;
+}
+async function addFeed(value) {
+  const url = FeedUtils.normalizeUrl(value);
+  const store = await load();
+  const existing = store.feeds.find(f => FeedUtils.sameUrl(f.url, url));
+  if (existing) return {ok:true, added:false};
+  // Validate before persisting a new subscription. A failed import leaves no
+  // placeholder subscription and does not touch the existing article cache.
+  const response = await fetch(url, {cache:"no-cache", credentials:"omit", redirect:"follow", signal:AbortSignal.timeout(30000)});
+  if (!response.ok) throw new Error("HTTP " + response.status);
+  const raw = await response.text();
+  if (raw.length > 5_000_000) throw new Error("Feed response too large");
+  const parsed = parseFeed(raw, url);
+  const latest = await load();
+  const articles = [...latest.articles, ...parsed.articles]
+    .sort((a,b) => b.published-a.published);
+  await browser.storage.local.set({
+    feeds:[...latest.feeds,{url,title:parsed.title,error:"",refreshedAt:Date.now()}],
+    articles
+  });
+  return {ok:true, added:true};
+}
+async function handleMessage(message) {
+  if (message?.type === "addFeed") return addFeed(message.url);
+  if (message?.type === "exportOpml") return {xml:Opml.export((await load()).feeds)};
+  if (message?.type === "importOpml") {
+    if (typeof message.xml !== "string" || message.xml.length > 5_000_000) {
+      throw new Error("Choose an OPML file smaller than 5 MB");
     }
-    await refreshFeed(url);
-    return {ok:true};
+    const parsed = Opml.parse(message.xml);
+    const result = {added:0, skipped:parsed.skipped, failed:parsed.failed};
+    for (const entry of parsed.entries) {
+      try {
+        const subscription = await addFeed(entry.url);
+        result[subscription.added ? "added" : "skipped"]++;
+      } catch { result.failed++; }
+    }
+    return result;
   }
   if (message?.type === "refresh") { await refreshAll(); return {ok:true}; }
   if (message?.type === "removeFeed") {
@@ -91,13 +126,16 @@ browser.runtime.onMessage.addListener(async message => {
     });
     return {ok:true};
   }
-});
+}
+browser.runtime.onMessage.addListener(message => enqueue(() => handleMessage(message)));
 browser.runtime.onInstalled.addListener(() => {
   browser.alarms.create("refresh", {periodInMinutes:POLL_MINUTES});
 });
 browser.runtime.onStartup.addListener(() => {
   browser.alarms.create("refresh", {periodInMinutes:POLL_MINUTES});
-  refreshAll();
+  enqueue(refreshAll);
 });
-browser.alarms.onAlarm.addListener(alarm => { if (alarm.name === "refresh") refreshAll(); });
+browser.alarms.onAlarm.addListener(alarm => {
+  if (alarm.name === "refresh") enqueue(refreshAll);
+});
 browser.alarms.create("refresh",{periodInMinutes:POLL_MINUTES});
